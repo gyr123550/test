@@ -1,0 +1,631 @@
+import nltk
+nltk.download('punkt')
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+names = ['short_description','headline','data','link','authors','category']#为每个特征命名
+raw_data= pd.read_csv(r'C:\Users\LENOVO\Desktop\News_Category_Dataset.csv',header=None, names=names,nrows = 8300)
+raw_data.head()
+
+raw_data.shape
+
+news= raw_data.drop(['data','link','authors'],axis=1)   #提取所需数据
+news.head()
+
+print ("数据条数:", len(raw_data))
+
+#查看每一列是否有缺失值
+na_cols = news.isnull().any(axis=0)
+na_cols
+
+# 查看具有缺失值的行总记录数
+news.isnull().sum().sort_values(ascending=False)
+
+news_cate=news.dropna(subset=['category'],how='any')
+news_cate
+
+import re
+re_obj=re.compile(r"[!\"#$%&'()*+,_./:;<=>?@[\\\]^_`{|}]+")
+
+def clear(text):
+    return re_obj.sub('',text)
+
+news_cate['short_description']=news_cate['short_description'].apply(clear)
+news_cate['headline']=news_cate['headline'].apply(clear)
+news_cate['category']=news_cate['category'].apply(clear)
+news_cate.sample(5)
+
+news_cate.isnull().sum()
+
+print(news_cate.duplicated().sum())
+#display(news_cate.duplicated())
+
+news_cate.drop_duplicates(inplace=True)
+print(news_cate.duplicated().sum())
+
+data = {"short_description": pd.Series(news_cate["short_description"].values),
+            "headline": pd.Series(news_cate["headline"].values),
+       "category": pd.Series(news_cate["category"].values)}
+news_cate1= pd.DataFrame(data)
+
+news_cate1
+
+print ("数据条数:", len(news_cate1))
+
+short_description2=news_cate1.iloc[1:,0]
+short_description2
+
+len(short_description2)
+
+new_short_description=[]
+for i in range(1,len(short_description2)):
+    if  short_description2[i][0]=="b":
+        new_short_description.append(short_description2[i].lstrip(short_description2[i][0]))
+    else:
+        new_short_description.append(short_description2[i])   
+
+len(new_short_description)
+
+headline2=news_cate1.iloc[1:,1]
+headline2
+
+new_headline=[]
+for i in range(1,len(headline2)):
+    if  headline2[i][0]=="b":
+        new_headline.append(headline2[i].lstrip(headline2[i][0]))
+    else:
+        new_headline.append(headline2[i])
+
+len(new_headline)
+
+category2=news_cate1.iloc[1:,2]
+category2
+
+new_category=[]
+for i in range(1,len(category2)):
+    if  category2[i][0]=="b":
+        new_category.append(category2[i].lstrip(category2[i][0]))
+    else:
+        new_category.append(category2[i])
+
+new_category
+
+short_description1=str(new_short_description)
+
+len(short_description1)
+
+short_description1
+
+short_description11=short_description1.lower()
+short_description11
+
+short_description111=short_description11.split(",")
+
+short_description111
+
+headline1=str(new_headline)
+
+len(headline1)
+
+headline11=headline1.lower()
+headline11
+
+headline111=headline11.split(",")
+
+headline111
+
+category1=str(new_category)
+
+category1
+
+len(category1)
+
+category11=category1.lower()
+category11
+
+category111=category11.split(",")
+
+category111
+
+data={'short_description':short_description111,
+     'headline':headline111,
+     'category':category111}
+
+df=pd.DataFrame(data)
+
+df
+
+import re
+re_obj=re.compile(r"[!\"#$%&'()*+,_./:;<=>?@[\\\]^_`{|}]+")
+
+def clear(text):
+    return re_obj.sub('',text)
+
+df['short_description']=df['short_description'].apply(clear)
+df['headline']=df['headline'].apply(clear)
+df['category']=df['category'].apply(clear)
+df.sample(5)
+
+df
+
+df['short_description_headline']=df.iloc[:,0]+df.iloc[:,1]
+
+df['short_description_headline']=df.iloc[:,0]+df.iloc[:,1]
+df0=df.drop(['short_description','headline'],axis=1)
+df0
+
+df0.head()
+
+from textblob import TextBlob
+
+from textblob import TextBlob 
+df0['short_description_headline'][:5].apply(lambda x: str(TextBlob(x).correct()))
+
+from nltk.stem import PorterStemmer 
+st=PorterStemmer() 
+df0['short_description_headline'][:5].apply(lambda x:" ".join([st.stem(word) for word in x.split()]))
+
+from textblob import Word
+df0['short_description_headline']=df0['short_description_headline'].apply(lambda x:" ".join([Word(word).lemmatize() for word in x.split()]))
+df0['short_description_headline'].head()
+
+import nltk
+nltk.download('stopwords')
+
+from nltk import PorterStemmer ,LancasterStemmer,word_tokenize
+
+from nltk.corpus import stopwords
+#首先获取英文的停用词，在去除掉
+without_stopwords = [w for w in df['short_description'] if not w in stopwords.words('english')]
+
+from nltk.corpus import stopwords 
+from nltk.tokenize import word_tokenize
+
+stop_words = set(stopwords.words('english'))
+
+stop_words
+
+df0.columns = [ 'category','short_description_headline']
+
+df0['short_description_headline'] = df0['short_description_headline'].str.split()
+
+df9=df0['short_description_headline'].apply(lambda x: [item for item in x if item not in stop_words])
+
+df9
+
+df8
+
+df7=pd.DataFrame({ 'short_description_headline':df9, 'category':df8})
+
+df7
+
+df88= df7.applymap(str)
+
+df88
+
+cat = df88['category'].values
+idx = [True if item[:5]!=' http' else False for item in cat]
+
+idx[:10]
+
+df88[idx]
+
+dataFrame88 = df88.drop('short_description_headline', axis=1).join(df88['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
+
+z88=dataFrame88.iloc[:,1]
+import pandas as pd
+import numpy as np
+tz_counts = z88.value_counts()  # df里面是要统计所在的字段名称
+a88 = tz_counts[:200]                                     # 提取统计结果前1000个
+#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
+
+a88
+
+import wordcloud 
+from PIL import Image
+import matplotlib.pyplot as plt
+mask = np.array(Image.open(r'C:\Users\LENOVO\Desktop\huaduo.PNG')) # 定义词频背景
+wc = wordcloud.WordCloud(
+    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
+    mask=mask, # 设置背景图
+    max_words=200, # 最多显示词数
+    max_font_size=8000 # 字体最大值
+)
+
+wc.generate_from_frequencies(a88) # 从字典生成词云
+image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
+wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
+plt.imshow(wc) # 显示词云
+plt.axis('off') # 关闭坐标轴
+plt.show() # 显示图像
+
+data_X2=df88['short_description_headline']
+data_Y2=df88['category']
+
+type(data_Y2)
+
+df88.columns = [ 'short_description_headline','category']
+
+df88['category'].value_counts()
+
+a = [' politics',' entertainment',' comedy']
+def func(x):
+    if x in a:
+        return x
+    else:
+        return ' others'
+
+data_Y1=data_Y2.values.tolist()
+
+data_Y1
+
+h=list(map(func,data_Y1))
+
+data_Y=pd.DataFrame(h, columns=['category'])
+
+data_Y
+
+data_Y3=data_Y.iloc[:,0]
+
+data_Y3
+
+data_X2
+
+df10=pd.DataFrame({ 'short_description_headline':data_X2, 'category':data_Y3})
+
+df10
+
+from io import StringIO
+col = ['short_description_headline', 'category']
+df10 = df10[col]
+df10 = df10[pd.notnull(df10['short_description_headline'])]
+df10.columns = ['short_description_headline', 'category']
+df10['category_id'] = df10['category'].factorize()[0]
+category_id_df10 = df10[['category', 'category_id']].drop_duplicates().sort_values('category_id')
+category_to_id = dict(category_id_df10.values)
+id_to_category = dict(category_id_df10[['category_id', 'category']].values)
+df10.head()
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer(sublinear_tf=True, min_df=5, norm='l2', encoding='latin-1', ngram_range=(1, 2), stop_words='english')
+features = tfidf.fit_transform(df10.short_description_headline).toarray()
+labels = df10.category_id
+features.shape
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.naive_bayes import MultinomialNB
+X_train, X_test, y_train, y_test = train_test_split(df10['short_description_headline'], df['category'], random_state = 0)
+count_vect = CountVectorizer()
+X_train_counts = count_vect.fit_transform(X_train)
+tfidf_transformer = TfidfTransformer()
+X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+clf = MultinomialNB().fit(X_train_tfidf, y_train)
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import cross_val_score
+models = [
+   RandomForestClassifier(n_estimators=200, max_depth=3, random_state=0),
+   LinearSVC(),
+   MultinomialNB(),
+   LogisticRegression(random_state=0),
+]
+CV = 5
+cv_df = pd.DataFrame(index=range(CV * len(models)))
+entries = []
+for model in models:
+ model_name = model.__class__.__name__
+ accuracies = cross_val_score(model, features, labels, scoring='accuracy', cv=CV)
+ for fold_idx, accuracy in enumerate(accuracies):
+   entries.append((model_name, fold_idx, accuracy))
+cv_df = pd.DataFrame(entries, columns=['model_name', 'fold_idx', 'accuracy'])
+import seaborn as sns
+sns.boxplot(x='model_name', y='accuracy', data=cv_df)
+sns.stripplot(x='model_name', y='accuracy', data=cv_df, 
+             size=8, jitter=True, edgecolor="gray", linewidth=2)
+plt.show()
+
+cv_df.groupby('model_name').accuracy.mean()
+
+import keras
+from keras import Input, Model
+from keras.layers import Embedding, Dense, Conv1D, GlobalMaxPooling1D, Concatenate, Dropout, BatchNormalization, TimeDistributed, Activation, concatenate
+from Config import *
+
+class TextCNN():
+    """
+    embedding_dims: 词向量维度  
+    convs: 每层的卷积窗口大小  
+    vocabulary_size: 词汇表大小
+    maxlen: 截断补齐长度
+    embedding_matrix: 预训练的词向量
+    """
+    def __init__(self, embedding_dims, convs, vocabulary_size, maxlen, embedding_matrix):
+        self.embedding_dims = embedding_dims
+        self.convs = convs
+        self.vocabulary_size = vocabulary_size
+        self.maxlen = maxlen
+        self.embedding_matrix = embedding_matrix
+
+    def get_model(self):
+        input = Input((self.maxlen, ))
+        embedding = Embedding(input_dim=self.vocabulary_size, output_dim=self.embedding_dims, input_length=self.maxlen, weights=[self.embedding_matrix])(input)
+        trans_content = Activation(activation="relu")(BatchNormalization()((TimeDistributed(Dense(256))(embedding))))
+        pools = []
+        for c in self.convs:
+            conv = Activation(activation="relu")(
+                BatchNormalization()(Conv1D(filters=128, kernel_size=c, padding="valid")(trans_content)))
+            pool = GlobalMaxPooling1D()(conv)
+            pools.append(pool)
+        merge = concatenate(pools)
+        merge = Dropout(0.5)(merge)
+        fc = Activation(activation="relu")(BatchNormalization()(Dense(256)(merge)))
+        output = Dense(Config.num_classes, activation="softmax")(fc)
+        model = Model(inputs=input, outputs=output)
+        model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
+        return model
+
+model = LinearSVC()
+X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(features, labels, df.index, test_size=0.15, random_state=3)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+from sklearn.metrics import confusion_matrix
+conf_mat = confusion_matrix(y_test, y_pred)
+fig, ax = plt.subplots(figsize=(10,10))
+sns.heatmap(conf_mat, annot=True, fmt='d',
+           xticklabels=category_id_df10.category.values, yticklabels=category_id_df10.category.values)
+plt.ylabel('Actual')
+plt.xlabel('Predicted')
+plt.show()
+
+from IPython.display import display
+for predicted in category_id_df10.category_id:
+ for actual in category_id_df10.category_id:
+   if predicted != actual and conf_mat[actual, predicted] >= 10:
+     print("'{}' predicted as '{}' : {} examples.".format(id_to_category[actual], id_to_category[predicted], conf_mat[actual, predicted]))
+     display(df10.loc[indices_test[(y_test == actual) & (y_pred == predicted)]][['category', 'short_description_headline']])
+     print('')
+
+from sklearn import metrics
+print(metrics.classification_report(y_test, y_pred, target_names=df10['category'].unique()))
+
+z1=df10[df10.category==' entertainment']
+
+z1
+
+
+#用词袋模型做的
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import cross_val_score
+models = [
+   RandomForestClassifier(n_estimators=200, max_depth=3, random_state=0),
+   LinearSVC(),
+   MultinomialNB(),
+   LogisticRegression(random_state=0),
+]
+CV = 5
+cv_df = pd.DataFrame(index=range(CV * len(models)))
+entries = []
+for model in models:
+ model_name = model.__class__.__name__
+ accuracies = cross_val_score(model, train_bow, labels, scoring='accuracy', cv=CV)
+ for fold_idx, accuracy in enumerate(accuracies):
+   entries.append((model_name, fold_idx, accuracy))
+cv_df = pd.DataFrame(entries, columns=['model_name', 'fold_idx', 'accuracy'])
+import seaborn as sns
+sns.boxplot(x='model_name', y='accuracy', data=cv_df)
+sns.stripplot(x='model_name', y='accuracy', data=cv_df, 
+             size=8, jitter=True, edgecolor="gray", linewidth=2)
+plt.show()
+
+cv_df.groupby('model_name').accuracy.mean()
+
+model = LogisticRegression()
+X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(train_bow, labels, df.index, test_size=0.134, random_state=3)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+from sklearn.metrics import confusion_matrix
+conf_mat = confusion_matrix(y_test, y_pred)
+fig, ax = plt.subplots(figsize=(10,10))
+sns.heatmap(conf_mat, annot=True, fmt='d',
+           xticklabels=category_id_df10.category.values, yticklabels=category_id_df10.category.values)
+plt.ylabel('Actual')
+plt.xlabel('Predicted')
+plt.show()
+
+from IPython.display import display
+for predicted in category_id_df10.category_id:
+ for actual in category_id_df10.category_id:
+   if predicted != actual and conf_mat[actual, predicted] >= 10:
+     print("'{}' predicted as '{}' : {} examples.".format(id_to_category[actual], id_to_category[predicted], conf_mat[actual, predicted]))
+     display(df10.loc[indices_test[(y_test == actual) & (y_pred == predicted)]][['category', 'short_description_headline']])
+     print('')
+
+from sklearn import metrics
+print(metrics.classification_report(y_test, y_pred, target_names=df10['category'].unique()))
+
+
+
+cols = ['short_description_headline']
+for col in cols:
+z1[col] = z1[col].map(lambda x: str(x).lstrip('[').rstrip(']'))
+
+z1
+
+dataFrame1 = z1.drop('short_description_headline', axis=1).join(z1['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
+
+z11=dataFrame1.iloc[:,1]
+
+z11
+
+import pandas as pd
+import numpy as np
+tz_counts = z11.value_counts()  # df里面是要统计所在的字段名称
+a1 = tz_counts[:10]                                     # 提取统计结果前1000个
+#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
+
+a1
+
+a11 = tz_counts[:100]
+
+type(a11)
+
+import wordcloud 
+from PIL import Image
+import matplotlib.pyplot as plt
+mask1 = np.array(Image.open(r'C:\Users\LENOVO\Desktop\huaduo.PNG')) # 定义词频背景
+wc = wordcloud.WordCloud(
+    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
+    mask=mask1, # 设置背景图
+    max_words=100, # 最多显示词数
+    max_font_size=8000 # 字体最大值
+)
+
+wc.generate_from_frequencies(a11) # 从字典生成词云
+image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
+wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
+plt.imshow(wc) # 显示词云
+plt.axis('off') # 关闭坐标轴
+plt.show() # 显示图像
+
+z0=df10[df10.category==' others']
+
+cols = ['short_description_headline']
+for col in cols:
+z0[col] = z0[col].map(lambda x: str(x).lstrip('[').rstrip(']'))
+
+dataFrame0= z0.drop('short_description_headline', axis=1).join(z0['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
+
+dataFrame0
+
+z01=dataFrame0.iloc[:,2]
+
+z01
+
+import pandas as pd
+import numpy as np
+tz_counts = z01.value_counts()  # df里面是要统计所在的字段名称
+a01 = tz_counts[:100]                                     # 提取统计结果前1000个
+#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
+
+import wordcloud 
+from PIL import Image
+import matplotlib.pyplot as plt
+mask0 = np.array(Image.open(r'C:\Users\LENOVO\Desktop\pingguo.PNG')) # 定义词频背景
+wc = wordcloud.WordCloud(
+    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
+    mask=mask0, # 设置背景图
+    max_words=100, # 最多显示词数
+    max_font_size=8000 # 字体最大值
+)
+
+wc.generate_from_frequencies(a01) # 从字典生成词云
+image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
+wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
+plt.imshow(wc) # 显示词云
+plt.axis('off') # 关闭坐标轴
+plt.show() # 显示图像
+
+import matplotlib.pyplot as plt
+
+labels1 = 'new','star','says','trump','show','first','sexual','like','back','said' #自定义标签
+sizes1 = [118,73,66,58,55,47,44,43,41,39]   #每个标签占多大
+
+plt.figure()
+plt.title("entertainment")
+plt.bar(labels1,sizes1,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
+plt.show()
+
+z4=df10[df10.category==' comedy']
+for col in cols:
+    z4[col] = z4[col].map(lambda x: str(x).lstrip('[').rstrip(']'))
+dataFrame4 = z4.drop('short_description_headline', axis=1).join(z4['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
+z41=dataFrame4.iloc[:,1]
+import pandas as pd
+import numpy as np
+tz_counts = z41.value_counts()  # df里面是要统计所在的字段名称
+a4 = tz_counts[:10]                                     # 提取统计结果前1000个
+#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
+
+z41
+
+a4
+
+a42 = tz_counts[:200]  
+a42
+
+mask2 = np.array(Image.open(r'C:\Users\LENOVO\Desktop\pingguo.PNG')) # 定义词频背景
+wc = wordcloud.WordCloud(
+    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
+    mask=mask2, # 设置背景图
+    max_words=100, # 最多显示词数
+    max_font_size=8000 # 字体最大值
+)
+
+wc.generate_from_frequencies(a42) # 从字典生成词云
+image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
+wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
+plt.imshow(wc) # 显示词云
+plt.axis('off') # 关闭坐标轴
+plt.show() # 显示图像
+
+import matplotlib.pyplot as plt
+
+labels4 = 'trump','donald','show','colbert','trumps','jimmy','host','stephen','kimmel','late' #自定义标签
+sizes4 = [129,75,64,64,53,53,43,42,41,31]   #每个标签占多大
+
+plt.figure()
+plt.title("comedy")
+plt.bar(labels4,sizes4,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
+plt.show()
+
+z6=df10[df10.category==' politics']
+for col in cols:
+    z6[col] = z6[col].map(lambda x: str(x).lstrip('[').rstrip(']'))
+dataFrame6 = z6.drop('short_description_headline', axis=1).join(z6['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
+z61=dataFrame6.iloc[:,2]
+import pandas as pd
+import numpy as np
+tz_counts = z61.value_counts()  # df里面是要统计所在的字段名称
+a6 = tz_counts[:10]                                     # 提取统计结果前1000个
+#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
+
+z6
+
+a6
+
+a62 = tz_counts[:200]
+a62
+
+mask3 = np.array(Image.open(r'C:\Users\LENOVO\Desktop\aixin.PNG')) # 定义词频背景
+wc = wordcloud.WordCloud(
+    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
+    mask=mask3, # 设置背景图
+    max_words=100, # 最多显示词数
+    max_font_size=8000 # 字体最大值
+)
+
+
+wc.generate_from_frequencies(a62) # 从字典生成词云
+image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
+wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
+plt.imshow(wc) # 显示词云
+plt.axis('off') # 关闭坐标轴
+plt.show() # 显示图像
+
+import matplotlib.pyplot as plt
+
+labels6 = 'trump','house','trumps','donald','says','state','gop','said','white','new'#自定义标签
+sizes6 = [548,165,152,121,120,106,105,103,102,99]   #每个标签占多大
+
+plt.figure()
+plt.title("politics")
+plt.bar(labels6,sizes6,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
+plt.show()
