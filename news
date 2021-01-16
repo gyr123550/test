@@ -64,7 +64,7 @@ for i in range(1,len(short_description2)):
     if  short_description2[i][0]=="b":
         new_short_description.append(short_description2[i].lstrip(short_description2[i][0]))
     else:
-        new_short_description.append(short_description2[i])   
+        new_short_description.append(short_description2[i])
 
 len(new_short_description)
 
@@ -158,18 +158,29 @@ df0
 
 df0.head()
 
-from textblob import TextBlob
+#句子长度分析：在赛题数据中每行句子的字符使用空格进行隔开，所以可以直接统计单词的个数来得到每个句子的长度。统计并如下：
+text_len= df0['short_description_headline'].apply(lambda x: len(x.split(' ')))
+print(text_len.describe())
 
-from textblob import TextBlob 
-df0['short_description_headline'][:5].apply(lambda x: str(TextBlob(x).correct()))
+_ = plt.hist(text_len, bins=200)
+plt.xlabel('Text char count')
+plt.title("Histogram of char count")
 
-from nltk.stem import PorterStemmer 
-st=PorterStemmer() 
-df0['short_description_headline'][:5].apply(lambda x:" ".join([st.stem(word) for word in x.split()]))
+o=pd.Series(' '.join(df0['short_description_headline']).split()).value_counts()[-10:]
+o
 
-from textblob import Word
-df0['short_description_headline']=df0['short_description_headline'].apply(lambda x:" ".join([Word(word).lemmatize() for word in x.split()]))
-df0['short_description_headline'].head()
+#from textblob import TextBlob
+
+#from textblob import TextBlob 
+#df0['short_description_headline'][:5].apply(lambda x: str(TextBlob(x).correct()))
+
+#from nltk.stem import PorterStemmer 
+#st=PorterStemmer() 
+#df0['short_description_headline'][:5].apply(lambda x:" ".join([st.stem(word) for word in x.split()]))
+
+#from textblob import Word
+#df0['short_description_headline']=df0['short_description_headline'].apply(lambda x:" ".join([Word(word).lemmatize() for word in x.split()]))
+#df0['short_description_headline'].head()
 
 import nltk
 nltk.download('stopwords')
@@ -194,6 +205,8 @@ df0['short_description_headline'] = df0['short_description_headline'].str.split(
 df9=df0['short_description_headline'].apply(lambda x: [item for item in x if item not in stop_words])
 
 df9
+
+df8=df0['category']
 
 df8
 
@@ -332,46 +345,8 @@ plt.show()
 
 cv_df.groupby('model_name').accuracy.mean()
 
-import keras
-from keras import Input, Model
-from keras.layers import Embedding, Dense, Conv1D, GlobalMaxPooling1D, Concatenate, Dropout, BatchNormalization, TimeDistributed, Activation, concatenate
-from Config import *
-
-class TextCNN():
-    """
-    embedding_dims: 词向量维度  
-    convs: 每层的卷积窗口大小  
-    vocabulary_size: 词汇表大小
-    maxlen: 截断补齐长度
-    embedding_matrix: 预训练的词向量
-    """
-    def __init__(self, embedding_dims, convs, vocabulary_size, maxlen, embedding_matrix):
-        self.embedding_dims = embedding_dims
-        self.convs = convs
-        self.vocabulary_size = vocabulary_size
-        self.maxlen = maxlen
-        self.embedding_matrix = embedding_matrix
-
-    def get_model(self):
-        input = Input((self.maxlen, ))
-        embedding = Embedding(input_dim=self.vocabulary_size, output_dim=self.embedding_dims, input_length=self.maxlen, weights=[self.embedding_matrix])(input)
-        trans_content = Activation(activation="relu")(BatchNormalization()((TimeDistributed(Dense(256))(embedding))))
-        pools = []
-        for c in self.convs:
-            conv = Activation(activation="relu")(
-                BatchNormalization()(Conv1D(filters=128, kernel_size=c, padding="valid")(trans_content)))
-            pool = GlobalMaxPooling1D()(conv)
-            pools.append(pool)
-        merge = concatenate(pools)
-        merge = Dropout(0.5)(merge)
-        fc = Activation(activation="relu")(BatchNormalization()(Dense(256)(merge)))
-        output = Dense(Config.num_classes, activation="softmax")(fc)
-        model = Model(inputs=input, outputs=output)
-        model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
-        return model
-
 model = LinearSVC()
-X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(features, labels, df.index, test_size=0.15, random_state=3)
+X_train, X_test, y_train, y_test, indices_train, indices_test = train_test_split(features, labels, df.index, test_size=0.134, random_state=3)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 from sklearn.metrics import confusion_matrix
@@ -391,13 +366,11 @@ for predicted in category_id_df10.category_id:
      display(df10.loc[indices_test[(y_test == actual) & (y_pred == predicted)]][['category', 'short_description_headline']])
      print('')
 
-from sklearn import metrics
-print(metrics.classification_report(y_test, y_pred, target_names=df10['category'].unique()))
+from sklearn.feature_extraction.text import CountVectorizer
+bow = CountVectorizer(max_features=1000, lowercase=True, ngram_range=(1,1),analyzer = "word")
+train_bow = bow.fit_transform(df10['short_description_headline'])
 
-z1=df10[df10.category==' entertainment']
-
-z1
-
+train_bow
 
 #用词袋模型做的
 from sklearn.linear_model import LogisticRegression
@@ -451,7 +424,9 @@ for predicted in category_id_df10.category_id:
 from sklearn import metrics
 print(metrics.classification_report(y_test, y_pred, target_names=df10['category'].unique()))
 
+z1=df10[df10.category==' entertainment']
 
+z1
 
 cols = ['short_description_headline']
 for col in cols:
@@ -461,7 +436,7 @@ z1
 
 dataFrame1 = z1.drop('short_description_headline', axis=1).join(z1['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
 
-z11=dataFrame1.iloc[:,1]
+z11=dataFrame1.iloc[:,2]
 
 z11
 
@@ -472,6 +447,16 @@ a1 = tz_counts[:10]                                     # 提取统计结果前1
 #tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
 
 a1
+
+import matplotlib.pyplot as plt
+
+labels1 ='new','star', 'says','trump', 'show' ,'first','sexual','like','back','said'#自定义标签
+sizes1 = [118,73,66,58,55,47,44,43,41,39]   #每个标签占多大
+
+plt.figure()
+plt.title("entertainment")
+plt.bar(labels1,sizes1,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
+plt.show()
 
 a11 = tz_counts[:100]
 
@@ -509,45 +494,11 @@ z01=dataFrame0.iloc[:,2]
 
 z01
 
-import pandas as pd
-import numpy as np
-tz_counts = z01.value_counts()  # df里面是要统计所在的字段名称
-a01 = tz_counts[:100]                                     # 提取统计结果前1000个
-#tz_counts.to_csv("C:/Users/Administrator/Desktop/ngram1deal.csv")
-
-import wordcloud 
-from PIL import Image
-import matplotlib.pyplot as plt
-mask0 = np.array(Image.open(r'C:\Users\LENOVO\Desktop\pingguo.PNG')) # 定义词频背景
-wc = wordcloud.WordCloud(
-    font_path='C:/Windows/Fonts/simhei.ttf', # 设置字体格式
-    mask=mask0, # 设置背景图
-    max_words=100, # 最多显示词数
-    max_font_size=8000 # 字体最大值
-)
-
-wc.generate_from_frequencies(a01) # 从字典生成词云
-image_colors = wordcloud.ImageColorGenerator(mask) # 从背景图建立颜色方案
-wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
-plt.imshow(wc) # 显示词云
-plt.axis('off') # 关闭坐标轴
-plt.show() # 显示图像
-
-import matplotlib.pyplot as plt
-
-labels1 = 'new','star','says','trump','show','first','sexual','like','back','said' #自定义标签
-sizes1 = [118,73,66,58,55,47,44,43,41,39]   #每个标签占多大
-
-plt.figure()
-plt.title("entertainment")
-plt.bar(labels1,sizes1,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
-plt.show()
-
 z4=df10[df10.category==' comedy']
 for col in cols:
     z4[col] = z4[col].map(lambda x: str(x).lstrip('[').rstrip(']'))
 dataFrame4 = z4.drop('short_description_headline', axis=1).join(z4['short_description_headline'].str.split(',', expand=True).stack().reset_index(level=1, drop=True).rename('tag'))
-z41=dataFrame4.iloc[:,1]
+z41=dataFrame4.iloc[:,2]
 import pandas as pd
 import numpy as np
 tz_counts = z41.value_counts()  # df里面是要统计所在的字段名称
@@ -575,16 +526,6 @@ wc.recolor(color_func=image_colors) # 将词云颜色设置为背景图方案
 plt.imshow(wc) # 显示词云
 plt.axis('off') # 关闭坐标轴
 plt.show() # 显示图像
-
-import matplotlib.pyplot as plt
-
-labels4 = 'trump','donald','show','colbert','trumps','jimmy','host','stephen','kimmel','late' #自定义标签
-sizes4 = [129,75,64,64,53,53,43,42,41,31]   #每个标签占多大
-
-plt.figure()
-plt.title("comedy")
-plt.bar(labels4,sizes4,color=['slateblue','darkslateblue','mediumslateblue','mediumpurple','indigo'],alpha=0.6) #指定不同颜色并设置透明度
-plt.show()
 
 z6=df10[df10.category==' politics']
 for col in cols:
